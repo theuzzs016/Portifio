@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot </title>
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f7f9fc; display: flex; justify-content: center; padding: 20px; }
+        #chat-container { width: 100%; max-width: 450px; background: rgb(220, 213, 213); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); overflow: hidden; display: flex; flex-direction: column; }
+        #chat-header { background: #000000; color: rgb(255, 255, 255); padding: 20px; text-align: center; font-weight: bold; }
+        #chat-output { height: 500px; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
+        .msg { max-width: 85%; padding: 12px 16px; border-radius: 15px; font-size: 15px; line-height: 1.5; }
+        .user-msg { align-self: flex-end; background-color: #6c5ce7; color: white; border-bottom-right-radius: 2px; }
+        .bot-msg { align-self: flex-start; background-color: #f1f2f6; color: #2f3542; border-bottom-left-radius: 2px; border: 1px solid #e1e1e1; }
+        #input-area { display: flex; padding: 20px; background: #fff; border-top: 1px solid #eee; }
+        #user-input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 25px; outline: none; transition: 0.3s; }
+        #user-input:focus { border-color: #2c2088; }
+        button { background: none; border: none; color: #010006; font-weight: bold; margin-left: 10px; cursor: pointer; font-size: 16px; }
+        .typing { font-style: italic; font-size: 12px; color: #a4b0be; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="chat-container">
+    <div id="chat-header">Chat tradutor de girías</div>
+    <div id="chat-output"></div>
+    <div id="input-area">
+        <input type="text" id="user-input" placeholder="Coloque aqui a giría que você quer traduzir!">
+        <button onclick="processUserInput()">Enviar</button>
+    </div>
+</div>
+
+<script>
+    const chatOutput = document.getElementById("chat-output");
+    const userInput = document.getElementById("user-input");
+
+    // Banco de respostas empáticas
+    const conselhos = {
+        farmar_aura: [
+            "É quando alguém faz algo muito maneiro, quando alguém faz algo que ganha seu respeito.",
+        ],
+        
+        swag: [
+            "Ter um estilo próprio, descolado e confiante.",
+        ],
+
+        diva_divou: [
+            "Quando alguém faz algo com muita elegância, perfeição ou arrasa em uma situação.",
+            
+        ],
+       
+        cringe: [
+            "Algo que dá vergonha alheia ou é muito cafona.",
+        
+        ],
+
+        red_flag: [
+            "Sinal vermelho (algum defeito) em alguém",
+        
+        ],
+
+        green_flag: [
+            "Sinal verde (alguma qualidade) em alguém",
+        
+        ],
+
+        tankar: [
+            "Conseguir aguentar ou suportar uma situação difícil ou engraçada.",
+        
+        ],
+
+        POV: [
+            "Significa 'ponto de vista' é como se estivéssemos vendo algo pelos olhos de outra pessoa.",
+        
+        ],
+
+        six_seven: [
+            "Não tem um significado, apenas acham graça por não ter um significado.", "SIX SEVEEEEEEN "
+        
+        ],
+
+        cunt: [
+            "No mundo da moda e das drags, é um elogio para quem está com uma atitude poderosa e impecável.",
+        
+        ],
+
+        fandom: [
+            "O grupo de fãs dedicados a algum artista, personagem, filme ou livro.",
+        
+        ],
+
+        slay: [
+            "Significa 'arrasar' ou fazer algo com excelência total.",
+        
+        ],
+
+        canon: [
+            "É quando algo é oficial e faz parte da história real de um livro ou filme.",
+        
+        ],
+
+        soft: [
+            "Algo fofo, delicado, leve ou que passa uma sensação de calma.",
+        
+        ],
+
+        curso_DS: [
+            "ESSE CURSO É UMA BOSTA, SINTO DÓ DE QUEM FAZ ESSE CURSO. No que mais posso te ajudar?",
+        ],
+
+        bestie: [
+            "é uma forma carinhosa e curta de chamar o seu melhor amigo(a)",
+        ],
+
+        ghosting: [
+            "Quando alguém some e para de responder do nada, como se tivesse virado um 'fantasma'.",
+        ],
+
+        aesthetic: [
+            "Uma estética ou um visual bonito e bem organizado.",
+        ],
+
+        clean: [
+            "Um estilo visual bem limpo, simples e sem muitos exageros.",
+        ],
+
+        brainrot: [
+            "personagens de jogos feito por IA",
+        ],
+
+        programar: [
+            "eu também odeio programar... programação foi algo feito pelo coisa ruim", 
+        
+        ],
+
+        alunos: [
+            "matheus: fez todos os códigos, yasmin: fez os slides e apresentou, gabriel: nada...decepção de aluno, rebeca: FALTOU MANO, elton: apresentou melhor que o gabriel"
+
+        ],
+     
+        joao: [
+            "joão paulo, me dá um 10"
+            
+        ],
+     
+
+        fallback: "Não entendi... pode escrever sua giría de novo?"
+
+    };
+
+    function displayMessage(role, text) {
+        const msgDiv = document.createElement("div");
+        msgDiv.className = role === "user" ? "msg user-msg" : "msg bot-msg";
+        msgDiv.innerHTML = text;
+        chatOutput.appendChild(msgDiv);
+        chatOutput.scrollTop = chatOutput.scrollHeight;
+    }
+
+    function getBotResponse(input) {
+        const text = input.toLowerCase();
+
+        // Detecção de aura
+        if (["farmar", "aura",].some(w => text.includes(w))) {
+            return conselhos.farmar_aura[Math.floor(Math.random() * conselhos.farmar_aura.length)];
+        }
+
+        // Detecção de swag
+        if (["swag","descolado",].some(w => text.includes(w))) {
+            return conselhos.swag[Math.floor(Math.random() * conselhos.swag.length)];
+        }
+
+        // Detecção de diva/divou
+        if (["divou", "diva",].some(w => text.includes(w))) {
+            return conselhos.diva_divou[Math.floor(Math.random() * conselhos.diva_divou.length)];
+        }
+
+        // Detecção de cringe
+        if (["cringe",].some(w => text.includes(w))) {
+            return conselhos.cringe[Math.floor(Math.random() * conselhos.cringe.length)];
+        }
+
+         // Detecção de red_flag
+         if (["red",].some(w => text.includes(w))) {
+            return conselhos.red_flag[Math.floor(Math.random() * conselhos.red_flag.length)];
+        }
+
+        // Detecção de green_flag
+        if (["green",].some(w => text.includes(w))) {
+            return conselhos.green_flag[Math.floor(Math.random() * conselhos.green_flag.length)];
+        }
+
+         // Detecção de tankar
+         if (["tankar",].some(w => text.includes(w))) {
+            return conselhos.tankar[Math.floor(Math.random() * conselhos.tankar.length)];
+        }
+
+         // Detecção de POV
+         if (["pov",].some(w => text.includes(w))) {
+            return conselhos.POV[Math.floor(Math.random() * conselhos.POV.length)];
+        }
+
+         // Detecção de six_seven
+         if (["seven", "six",].some(w => text.includes(w))) {
+            return conselhos.six_seven[Math.floor(Math.random() * conselhos.six_seven.length)];
+        }
+
+        // Detecção de cunt
+        if (["cunt",].some(w => text.includes(w))) {
+            return conselhos.cunt[Math.floor(Math.random() * conselhos.cunt.length)];
+        }
+
+        // Detecção de fandom
+        if (["fandom",].some(w => text.includes(w))) {
+            return conselhos.fandom[Math.floor(Math.random() * conselhos.fandom.length)];
+        }
+
+        // Detecção de slay
+        if (["slay",].some(w => text.includes(w))) {
+            return conselhos.slay[Math.floor(Math.random() * conselhos.slay.length)];
+        }
+
+        // Detecção de canon
+        if (["canon",].some(w => text.includes(w))) {
+            return conselhos.canon[Math.floor(Math.random() * conselhos.canon.length)];
+        }
+
+        // Detecção de soft
+        if (["soft",].some(w => text.includes(w))) {
+            return conselhos.soft[Math.floor(Math.random() * conselhos.soft.length)];
+        }
+
+        // Detecção de curso DS
+        if (["curso", "ds", ].some(w => text.includes(w))) {
+            return conselhos.curso_DS[Math.floor(Math.random() * conselhos.curso_DS.length)];
+        }
+
+        // Detecção de bestie
+        if (["bestie",].some(w => text.includes(w))) {
+            return conselhos.bestie[Math.floor(Math.random() * conselhos.bestie.length)];
+        }
+
+        // Detecção de ghosting
+        if (["ghosting",].some(w => text.includes(w))) {
+            return conselhos.ghosting[Math.floor(Math.random() * conselhos.ghosting.length)];
+        }
+
+        // Detecção de aesthetic
+        if (["aesthetic",].some(w => text.includes(w))) {
+            return conselhos.aesthetic[Math.floor(Math.random() * conselhos.aesthetic.length)];
+        }
+
+        // Detecção de clean
+        if (["clean",].some(w => text.includes(w))) {
+            return conselhos.clean[Math.floor(Math.random() * conselhos.clean.length)];
+        }
+
+        // Detecção de brainrot
+        if (["brainrot",].some(w => text.includes(w))) {
+            return conselhos.brainrot[Math.floor(Math.random() * conselhos.brainrot.length)];
+        }
+
+         // Detecção de programação
+         if (["odeio", "programar", "programação", ].some(w => text.includes(w))) {
+            return conselhos.programar[Math.floor(Math.random() * conselhos.programar.length)];
+        }
+
+         // Detecção de alunos
+         if (["trabalho", "alunos", ].some(w => text.includes(w))) {
+            return conselhos.alunos[Math.floor(Math.random() * conselhos.alunos.length)];
+        }
+        
+        
+         // Detecção de joao
+         if (["10", "joao", ].some(w => text.includes(w))) {
+            return conselhos.joao[Math.floor(Math.random() * conselhos.joao.length)];
+        }
+
+         
+
+
+        // Agradecimento ou melhora
+        if (["obrigado", "obrigada", "ajudou", "melhor"].some(w => text.includes(w))) {
+            return "Fico muito feliz em saber que pude ajudar um pouquinho. Qualquer dúvida estarei a disposição!";
+        }
+
+        return conselhos.fallback;
+    }
+
+    function processUserInput() {
+        const message = userInput.value.trim();
+        if (!message) return;
+
+        displayMessage("user", message);
+        userInput.value = "";
+
+        // Efeito de "O Chatbot está pensando..."
+        const typingIndicator = document.createElement("div");
+        typingIndicator.className = "typing";
+        typingIndicator.innerText = "o Chat está traduzindo a giría solicitada...";
+        chatOutput.appendChild(typingIndicator);
+
+        setTimeout(() => {
+            typingIndicator.remove();
+            const botReply = getBotResponse(message);
+            displayMessage("bot", botReply);
+        }, 1500); 
+    }
+
+    userInput.addEventListener("keyup", (e) => { if (e.key === "Enter") processUserInput(); });
+
+    // Mensagem inicial acolhedora
+    window.onload = () => {
+        setTimeout(() => {
+            displayMessage("bot", "Olá! Eu sou um Chatbot tradutor de girías. Qual giría você quer que eu traduza?");
+        }, 800);
+    };
+
+</script>
+
+</body>
+</html>
